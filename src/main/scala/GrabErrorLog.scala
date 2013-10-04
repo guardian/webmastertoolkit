@@ -1,10 +1,10 @@
 import com.google.gdata.client.webmastertools.WebmasterToolsService
 import com.google.gdata.data.webmastertools.{CrawlIssueEntry, CrawlIssuesFeed}
-import java.io.File
 import java.net.{URLEncoder, URL}
 import java.sql.DriverManager
 import scala.collection.JavaConversions._
 import com.gu.conf.{Configuration, ConfigurationFactory}
+import com.github.nscala_time.time.Imports._
 
 object GrabErrorLog extends App {
   val FEEDS_PATH = "https://www.google.com/webmasters/tools/feeds/"
@@ -26,7 +26,8 @@ object GrabErrorLog extends App {
   service.setUserCredentials(username, password)
 
   Class.forName("org.sqlite.JDBC")
-  val db = DriverManager.getConnection("jdbc:sqlite:output/webmastertoolkit.db")
+  val now = DateTimeFormat.forPattern("yyyyMMdd-HH:mm").print(DateTime.now)
+  val db = DriverManager.getConnection(s"jdbc:sqlite:output/webmastertoolkit-$now.db")
   db.setAutoCommit(false)
 
   val statement = db.createStatement()
