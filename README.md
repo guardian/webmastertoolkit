@@ -12,3 +12,7 @@ A simple set of tools for us to work on the Google Webmaster Tools reports.
 
 1. Clone this project
 1. $ sbt run
+1. The app will output a sqlite3 db file in the output folder. Open it with [sqlite3] (http://www.sqlite.org/) 
+
+The current errors output data to the *errors* table. 
+
