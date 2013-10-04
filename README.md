@@ -9,5 +9,6 @@ A simple set of tools for us to work on the Google Webmaster Tools reports.
 
     gdata.password=yourGoogleWebmasterToolkitPassword
 
+
 1. Clone this project
 1. $ sbt run
