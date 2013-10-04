@@ -11,6 +11,7 @@ object GrabErrorLog extends App {
   val SITE = "http://www.theguardian.com/"
   val configuration: Configuration = ConfigurationFactory.getConfiguration("webmastertoolkit")
 
+  def escapeSingleQuotes(input: String) = input.replace("'", "%27")
 
   def getCrawlIssuesPageUrl(site: String, start: Int, count: Int): URL = {
     val crawlIssuesUrl: String = FEEDS_PATH + URLEncoder.encode(site, "UTF-8") + "/crawlissues/" + "?start-index=" + start + "&max-results=" + count
@@ -26,12 +27,18 @@ object GrabErrorLog extends App {
   service.setUserCredentials(username, password)
 
   Class.forName("org.sqlite.JDBC")
-  val now = DateTimeFormat.forPattern("yyyyMMdd-HH:mm").print(DateTime.now)
+  val now = DateTimeFormat.forPattern("yyyyMMdd-HHmm").print(DateTime.now)
   val db = DriverManager.getConnection(s"jdbc:sqlite:output/webmastertoolkit-$now.db")
   db.setAutoCommit(false)
 
   val statement = db.createStatement()
-  statement.executeUpdate("create table errors (url text);")
+  statement.executeUpdate("""create table errors (url text,
+                                                | crawlType text,
+                                                | error text,
+                                                | linkedFrom text,
+                                                | dateDetected text);""".stripMargin
+  )
+
 
   Range(1, 100).foreach {
     i =>
@@ -42,10 +49,15 @@ object GrabErrorLog extends App {
           val entries = x.getEntries()
           entries.foreach {
             entry =>
-              val value = entry.getUrl().getUrl().replace("'", "%27")
+              val url = escapeSingleQuotes(entry.getUrl().getUrl())
+              val crawlType = entry.getCrawlType.getCrawlType
+              val error = entry.getDetail.getDetail
+              val linkedFrom = entry.getLinkedFroms.map(_.getLinkedFromUrl()).map(escapeSingleQuotes(_)).mkString("; ")
+              val dateDetected = entry.getDateDetected.getDateDetected
 
-              val insert = s"""INSERT INTO errors(url) values ('$value');"""
-              statement.executeUpdate(insert.toString)
+              val insert = s"""INSERT INTO errors(url, crawlType, error, linkedFrom, dateDetected) values ('$url', '$crawlType', '$error', '$linkedFrom', '$dateDetected');"""
+              println(insert)
+              statement.executeUpdate(insert)
           }
       }
 
