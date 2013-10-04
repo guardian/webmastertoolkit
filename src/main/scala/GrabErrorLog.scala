@@ -1,6 +1,8 @@
 import com.google.gdata.client.webmastertools.WebmasterToolsService
 import com.google.gdata.data.webmastertools.{CrawlIssueEntry, CrawlIssuesFeed}
+import java.io.File
 import java.net.{URLEncoder, URL}
+import java.sql.DriverManager
 import scala.collection.JavaConversions._
 import com.gu.conf.{Configuration, ConfigurationFactory}
 
@@ -23,6 +25,13 @@ object GrabErrorLog extends App {
   val service = new WebmasterToolsService("Guardian-404-Log-Fetcher")
   service.setUserCredentials(username, password)
 
+  Class.forName("org.sqlite.JDBC")
+  val db = DriverManager.getConnection("jdbc:sqlite:output/webmastertoolkit.db")
+  db.setAutoCommit(false)
+
+  val statement = db.createStatement()
+  statement.executeUpdate("create table errors (url text);")
+
   Range(1, 100).foreach {
     i =>
       val url = getCrawlIssuesPageUrl(SITE, i * 1000, 1000)
@@ -32,10 +41,15 @@ object GrabErrorLog extends App {
           val entries = x.getEntries()
           entries.foreach {
             entry =>
-              println(entry.getUrl.getUrl)
+              val value = entry.getUrl().getUrl().replace("'", "%27")
+
+              val insert = s"""INSERT INTO errors(url) values ('$value');"""
+              statement.executeUpdate(insert.toString)
           }
       }
 
   }
-
+  statement.close()
+  db.commit()
+  db.close()
 }
